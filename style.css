@@ -142,37 +142,52 @@ body {
     box-shadow: 0 15px 40px rgba(255, 255, 255, 0.2);
 }
 
-/* Floating Elements */
+/* Floating Elements & Canvas Background */
+#hero-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
 .floating-element {
     position: absolute;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-    animation: float 6s ease-in-out infinite;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.3),
+        inset 0 0 20px rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+    z-index: 1;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
 }
 
-.floating-element:nth-child(1) {
+.floating-element:nth-child(2) {
     width: 80px;
     height: 80px;
     top: 20%;
     left: 10%;
-    animation-delay: 0s;
 }
 
-.floating-element:nth-child(2) {
+.floating-element:nth-child(3) {
     width: 120px;
     height: 120px;
     top: 60%;
     right: 10%;
-    animation-delay: 2s;
 }
 
-.floating-element:nth-child(3) {
+.floating-element:nth-child(4) {
     width: 60px;
     height: 60px;
     bottom: 20%;
     left: 20%;
-    animation-delay: 4s;
 }
 
 /* Sections */
@@ -270,15 +285,16 @@ body {
     padding: 30px 20px;
     background: linear-gradient(135deg, #ffffff, #f8f8f8);
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.5s ease, background 0.5s ease;
     border: 1px solid rgba(0, 0, 0, 0.05);
+    transform-style: preserve-3d;
+    transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1);
+    will-change: transform;
 }
 
 .skill-item:hover {
-    transform: translateY(-10px);
-    background: linear-gradient(135deg, #f8f8f8, #ffffff);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15);
 }
 
 .skill-icon {
@@ -387,16 +403,17 @@ body {
     background: linear-gradient(135deg, #ffffff, #f8f8f8);
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.5s ease, background 0.5s ease;
     cursor: pointer;
     border: 1px solid rgba(0, 0, 0, 0.05);
+    transform-style: preserve-3d;
+    transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1);
+    will-change: transform;
 }
 
 .project-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-    background: linear-gradient(135deg, #f8f8f8, #ffffff);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
 }
 
 .project-image {
@@ -572,13 +589,71 @@ html {
 /* Scroll animations */
 .fade-in {
     opacity: 0;
-    transform: translateY(30px);
-    transition: all 0.6s ease;
+    transform: translateY(40px) scale(0.96);
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+    will-change: transform, opacity;
 }
-
+ 
 .fade-in.visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+}
+
+/* 3D Depth Inner Element Transform offsets */
+.project-image, .skill-icon {
+    transform: translateZ(40px);
+}
+
+.project-title, .skill-item h4 {
+    transform: translateZ(30px);
+}
+
+.project-description, .skill-item p, .project-link {
+    transform: translateZ(20px);
+}
+
+/* Custom Cursor Styles */
+.custom-cursor {
+    width: 6px;
+    height: 6px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    position: fixed;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10000;
+    mix-blend-mode: difference;
+    transition: width 0.2s ease, height 0.2s ease;
+}
+
+.custom-cursor-follower {
+    width: 30px;
+    height: 30px;
+    border: 1.5px solid #ffffff;
+    border-radius: 50%;
+    position: fixed;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: difference;
+    transition: transform 0.1s ease-out, width 0.2s ease, height 0.2s ease;
+}
+
+body.cursor-hovering .custom-cursor {
+    width: 10px;
+    height: 10px;
+}
+
+body.cursor-hovering .custom-cursor-follower {
+    width: 50px;
+    height: 50px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .custom-cursor, .custom-cursor-follower {
+        display: none;
+    }
 }
 
 /* Additional gradient effects */
