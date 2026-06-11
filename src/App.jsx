@@ -473,7 +473,7 @@ export default function App() {
                   <span className="text-4xl text-gray-500 font-bold">TLD</span>
                 ) : (
                   <img 
-                    src="/assets/ProfilePhoto.jpg" 
+                    src="assets/ProfilePhoto.jpg" 
                     alt="Trần Lạc Duy Profile" 
                     className="w-[94%] h-[94%] object-cover rounded-full" 
                     onError={() => setImgError(true)}
