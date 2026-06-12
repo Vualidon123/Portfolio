@@ -7,40 +7,37 @@ export default function CoffeeSmartDiagram({ lang = 'en' }) {
   const translations = {
     vi: {
       order: {
-        title: "1. Đặt đồ uống & Khấu trừ kho tự động (In-Memory Queue)",
-        techs: ["ASP.NET Core", ".NET Channels", "EF Core", "PostgreSQL"],
-        nodes: ["client", "gateway", "backend", "channels", "worker", "db"],
-        description: "Quy trình xử lý đặt đơn hàng bất đồng bộ nhằm giảm tải cho luồng chính và đảm bảo tính chính xác của kho nguyên liệu:",
+        title: "1. Nhập doanh thu & Khấu trừ kho đồng bộ (Synchronous Transaction)",
+        techs: ["ASP.NET Core", "EF Core", "PostgreSQL", "Database Transaction"],
+        nodes: ["client", "backend", "db"],
+        description: "Quy trình ghi nhận doanh thu hàng ngày và đồng bộ khấu trừ tồn kho nguyên liệu thô trực tiếp trong cùng một Transaction:",
         steps: [
-          "Thiết bị khách hàng gửi yêu cầu đặt món thông qua API Gateway.",
-          "Backend tiếp nhận đơn, ghi trạng thái 'Pending' và lập tức đẩy Event 'OrderPlacedEvent' vào .NET Channels (In-Memory Queue), phản hồi nhanh cho Client.",
-          "Kênh truyền dẫn .NET Channel định tuyến sự kiện tới Background Worker.",
-          "Background Hosted Service (Worker) tiêu thụ sự kiện bất đồng bộ, tính toán quy đổi công thức nước uống ra số lượng nguyên liệu thô.",
-          "Worker cập nhật trừ số lượng tồn kho nguyên liệu tương ứng trong database PostgreSQL một cách nhất quán."
+          "Thiết bị khách hàng/quản trị gửi dữ liệu doanh thu hàng ngày trực tiếp đến Backend API.",
+          "Backend tiếp nhận yêu cầu, mở một Database Transaction có tính nhất quán cao.",
+          "Hệ thống thực hiện trừ trực tiếp số lượng nguyên liệu thô trong ShopInventory dựa trên công thức đồ uống (ShopRecipeIngredient) của các món đã bán ngay trong Transaction tạo Daily Sales."
         ]
       },
       withdraw: {
-        title: "2. Rút tiền an toàn & Xác thực mã OTP (In-Memory Cache)",
+        title: "2. Rút tiền an toàn & Xác thực mã OTP (IMemoryCache & DB Cooldown)",
         techs: ["IMemoryCache", "OTP Verification", "Database Transaction"],
-        nodes: ["client", "gateway", "backend", "cache", "db"],
+        nodes: ["client", "backend", "cache", "db"],
         description: "Quy trình kiểm soát giao dịch rút tiền nhạy cảm nhằm ngăn chặn tấn công Concurrency (Race Condition) và spam API:",
         steps: [
-          "Khách hàng gửi yêu cầu rút tiền từ Ví điện tử nội bộ.",
-          "Yêu cầu được xác thực thông tin cơ bản tại Gateway.",
-          "Backend sử dụng .NET IMemoryCache làm bộ nhớ tạm để kiểm soát tần suất (Rate Limit) 24h đối với mỗi user để tránh việc spam mã OTP.",
-          "Mã OTP được xác minh; sau đó hệ thống mở một Database Transaction có cô lập (Isolation Level) nghiêm ngặt để cập nhật số dư ví và lưu lịch sử giao dịch vào DB PostgreSQL."
+          "Khách hàng gửi yêu cầu rút tiền từ Ví điện tử nội bộ trực tiếp đến Backend API.",
+          "Hệ thống kiểm tra lịch sử rút tiền trong database PostgreSQL để áp dụng khóa cooldown 24 giờ, đồng thời dùng .NET IMemoryCache để lưu trữ mã OTP tạm thời trong vòng 5 phút.",
+          "Khi yêu cầu rút tiền được khởi tạo, hệ thống đóng băng số dư khả dụng ngay lập tức. Sau khi OTP được xác thực thành công, trạng thái yêu cầu rút tiền được cập nhật thành Pending chờ Admin phê duyệt."
         ]
       },
       ai: {
         title: "3. Tự động hóa tạo thực đơn với Gemini AI",
-        techs: ["Gemini API", "JSON Schema Validator", "Hosted Service"],
-        nodes: ["backend", "gemini", "db"],
+        techs: ["Gemini API", "ResponseJsonSchema", "Vector Embeddings", "Firebase"],
+        nodes: ["client", "backend", "gemini", "db"],
         description: "Quy trình khai thác trí tuệ nhân tạo để sinh thực đơn thông minh, đồng thời kiểm soát chất lượng dữ liệu đầu vào:",
         steps: [
-          "Hệ thống quản trị (Admin) kích hoạt tính năng đề xuất thực đơn mới.",
-          "Backend thực hiện kỹ thuật Prompt Engineering, gửi yêu cầu có cấu trúc chặt chẽ đến API Gemini.",
-          "Gemini phản hồi dữ liệu thô. Backend sử dụng Schema Validator để đối chiếu, đảm bảo dữ liệu trùng khớp 100% với cấu trúc thực đơn hợp lệ.",
-          "Lưu thực đơn đã chuẩn hóa vào cơ sở dữ liệu PostgreSQL."
+          "Chủ cửa hàng (Coffee Shop Owner) kích hoạt tính năng đề xuất thực đơn thông minh trên Client App, gửi yêu cầu trực tiếp đến Backend API.",
+          "Backend thực hiện kỹ thuật Prompt Engineering, gửi yêu cầu đến API Gemini.",
+          "Gemini đảm bảo phản hồi dữ liệu cấu trúc JSON chính xác 100% khớp với DTO schema định sẵn của backend thông qua cấu hình native ResponseJsonSchema.",
+          "Các món thực đơn chuẩn hóa được lưu vào PostgreSQL, vector embeddings của chúng được tạo & lưu trữ, và bố cục menu được vẽ thành ảnh lưu trên Firebase & DB."
         ]
       },
       tip: "Chọn các nút bên trên để đổi kịch bản kiểm tra sơ đồ.",
@@ -48,40 +45,37 @@ export default function CoffeeSmartDiagram({ lang = 'en' }) {
     },
     en: {
       order: {
-        title: "1. Order Beverage & Auto Stock Deduction (In-Memory Queue)",
-        techs: ["ASP.NET Core", ".NET Channels", "EF Core", "PostgreSQL"],
-        nodes: ["client", "gateway", "backend", "channels", "worker", "db"],
-        description: "Asynchronous order processing workflow to offload the main request thread and ensure accurate raw ingredient inventory:",
+        title: "1. Daily Sale Entry & Synchronous Stock Deduction (Synchronous Transaction)",
+        techs: ["ASP.NET Core", "EF Core", "PostgreSQL", "Database Transaction"],
+        nodes: ["client", "backend", "db"],
+        description: "Workflow for logging daily sales and synchronously deducting raw ingredient inventory directly within a single database transaction:",
         steps: [
-          "Customer device sends an order request through the API Gateway.",
-          "Backend accepts the order, records it as 'Pending', immediately pushes 'OrderPlacedEvent' into .NET Channels (In-Memory Queue), and responds to the Client.",
-          "The .NET Channel routes the event to the Background Worker.",
-          "Background Hosted Service (Worker) consumes the event asynchronously, translating the drink recipe into raw ingredient quantities.",
-          "Worker deducts and updates the corresponding stock levels in PostgreSQL database consistently."
+          "Client/Admin device sends daily sales data directly to the Backend API.",
+          "Backend processes the request, opening a highly consistent Database Transaction.",
+          "The system directly deducts raw ingredient quantities in ShopInventory based on drink recipe ingredients (ShopRecipeIngredient) of the sold items within the same Transaction that creates Daily Sales."
         ]
       },
       withdraw: {
-        title: "2. Secure Wallet Withdrawal & OTP Verification (In-Memory Cache)",
+        title: "2. Secure Wallet Withdrawal & OTP Verification (IMemoryCache & DB Cooldown)",
         techs: ["IMemoryCache", "OTP Verification", "Database Transaction"],
-        nodes: ["client", "gateway", "backend", "cache", "db"],
+        nodes: ["client", "backend", "cache", "db"],
         description: "Sensitive wallet withdrawal verification process to prevent Concurrency attacks (Race Conditions) and API abuse:",
         steps: [
-          "Customer sends a request to withdraw money from their internal digital wallet.",
-          "The request is validated for basic authentication at the Gateway.",
-          "Backend utilizes .NET IMemoryCache to manage rate limiting (24-hour lock) per user, preventing OTP code spamming.",
-          "Once the OTP is verified, the system opens a strict Database Transaction to update the wallet balance and log transaction history in PostgreSQL."
+          "Customer sends a request to withdraw money from their internal digital wallet directly to the Backend API.",
+          "The system checks withdrawal history in the PostgreSQL database to apply a 24-hour cooldown lock, while using .NET IMemoryCache to store the temporary OTP for 5 minutes.",
+          "When a withdrawal request is initiated, the system freezes the available balance immediately. After OTP is successfully verified, the withdrawal request status is updated to Pending, waiting for Admin approval."
         ]
       },
       ai: {
         title: "3. Smart Menu Generation with Gemini AI",
-        techs: ["Gemini API", "JSON Schema Validator", "Hosted Service"],
-        nodes: ["backend", "gemini", "db"],
+        techs: ["Gemini API", "ResponseJsonSchema", "Vector Embeddings", "Firebase"],
+        nodes: ["client", "backend", "gemini", "db"],
         description: "AI workflow utilizing generative models for smart menu suggestions while enforcing strict data schemas:",
         steps: [
-          "Administrator triggers the smart menu suggestion feature.",
-          "Backend performs Prompt Engineering, sending structured requirements to the Gemini API.",
-          "Gemini returns raw catalog data. Backend uses a JSON Schema Validator to verify it matches the valid menu structure 100%.",
-          "Standardized menu items are saved directly into the PostgreSQL database."
+          "Coffee Shop Owner triggers the smart menu suggestion feature on the Client App, sending the request directly to the Backend API.",
+          "Backend performs Prompt Engineering, sending the request to the Gemini API.",
+          "Gemini guarantees 100% structured JSON output matching the backend's predefined DTO schema via native ResponseJsonSchema configuration.",
+          "Standardized menu items are saved into PostgreSQL, their vector embeddings are generated & stored, and the menu layout is rendered into images saved on Firebase & DB."
         ]
       },
       tip: "Click the buttons above to switch visualization scenarios.",
@@ -93,23 +87,22 @@ export default function CoffeeSmartDiagram({ lang = 'en' }) {
   const activeFlowData = currentText[activeFlow];
 
   const nodeCoords = {
-    client: { x: 80, y: 170, label: lang === 'vi' ? "Ứng dụng khách" : "Client App", sub: "React Native / Web", icon: ShoppingCart },
-    gateway: { x: 230, y: 170, label: "API Gateway", sub: "YARP / Security", icon: Shield },
-    backend: { x: 420, y: 170, label: "Backend API", sub: ".NET Core", icon: Server },
-    channels: { x: 610, y: 80, label: ".NET Channels", sub: "In-Memory Queue", icon: Layers },
-    worker: { x: 800, y: 80, label: "Hosted Services", sub: "Background Workers", icon: Cpu },
-    cache: { x: 420, y: 280, label: "IMemoryCache", sub: ".NET In-Memory", icon: Zap },
+    client: { x: 120, y: 170, label: lang === 'vi' ? "Ứng dụng khách" : "Client App", sub: "React Native / Web", icon: ShoppingCart },
+    backend: { x: 380, y: 170, label: "Backend API", sub: ".NET Core", icon: Server },
+    // channels: { x: 580, y: 80, label: ".NET Channels", sub: "In-Memory Queue", icon: Layers },
+    // worker: { x: 780, y: 80, label: "Hosted Services", sub: "Background Workers", icon: Cpu },
+    cache: { x: 380, y: 280, label: "IMemoryCache", sub: ".NET In-Memory", icon: Zap },
     db: { x: 700, y: 240, label: "PostgreSQL DB", sub: "Primary Store", icon: Database },
-    gemini: { x: 420, y: 50, label: "Gemini AI API", sub: "Smart Menu Gen", icon: Sparkles }
+    gemini: { x: 380, y: 50, label: "Gemini AI API", sub: "Smart Menu Gen", icon: Sparkles }
   };
 
   const isNodeActive = (nodeId) => activeFlowData.nodes.includes(nodeId);
 
   // Map flows to visual path identifiers
   const flowPaths = {
-    order: ["client-gateway", "gateway-backend", "backend-channels", "channels-worker", "worker-db"],
-    withdraw: ["client-gateway", "gateway-backend", "backend-cache", "backend-db"],
-    ai: ["backend-gemini", "backend-db"]
+    order: ["client-backend", "backend-db"],
+    withdraw: ["client-backend", "backend-cache", "backend-db"],
+    ai: ["client-backend", "backend-gemini", "backend-db"]
   };
 
   const isPathActive = (pathId) => flowPaths[activeFlow].includes(pathId);
@@ -130,7 +123,7 @@ export default function CoffeeSmartDiagram({ lang = 'en' }) {
               : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'
           }`}
         >
-          {lang === 'vi' ? "Luồng Order (In-Memory Queue)" : "Order Flow (In-Memory Queue)"}
+          {lang === 'vi' ? "Nhập doanh thu & Trừ kho" : "Daily Sales & Stock Deduction"}
         </button>
         <button
           onClick={() => setActiveFlow('withdraw')}
@@ -154,7 +147,7 @@ export default function CoffeeSmartDiagram({ lang = 'en' }) {
         </button>
       </div>
 
-      {/* SVG Diagram Canvas (Wrapper added with overflow-x-auto to prevent layout breakage) */}
+      {/* SVG Diagram Canvas */}
       <div className="relative border border-white/5 rounded-2xl bg-black/40 p-4 overflow-x-auto w-full">
         <svg 
           viewBox="0 0 950 350" 
@@ -175,107 +168,94 @@ export default function CoffeeSmartDiagram({ lang = 'en' }) {
 
           {/* DRAW CONNECTIONS / PATHS */}
           
-          {/* client-gateway */}
+          {/* client-backend */}
           <path
-            d="M 140 170 L 170 170"
-            stroke={isPathActive('client-gateway') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
-            strokeWidth={isPathActive('client-gateway') ? 3 : 1.5}
+            d="M 180 170 L 320 170"
+            stroke={isPathActive('client-backend') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
+            strokeWidth={isPathActive('client-backend') ? 3 : 1.5}
             fill="none"
           />
-          {isPathActive('client-gateway') && (
+          {isPathActive('client-backend') && (
             <circle r="4" fill="#818cf8" filter="url(#glow)">
-              <animateMotion dur="2s" repeatCount="indefinite" path="M 140 170 L 170 170" />
-            </circle>
-          )}
-
-          {/* gateway-backend */}
-          <path
-            d="M 290 170 L 360 170"
-            stroke={isPathActive('gateway-backend') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
-            strokeWidth={isPathActive('gateway-backend') ? 3 : 1.5}
-            fill="none"
-          />
-          {isPathActive('gateway-backend') && (
-            <circle r="4" fill="#a78bfa" filter="url(#glow)">
-              <animateMotion dur="2s" repeatCount="indefinite" path="M 290 170 L 360 170" />
+              <animateMotion dur="2s" repeatCount="indefinite" path="M 180 170 L 320 170" />
             </circle>
           )}
 
           {/* backend-channels */}
           <path
-            d="M 480 170 C 530 170, 520 80, 550 80"
+            d="M 440 170 C 490 170, 500 80, 520 80"
             stroke={isPathActive('backend-channels') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
             strokeWidth={isPathActive('backend-channels') ? 3 : 1.5}
             fill="none"
           />
           {isPathActive('backend-channels') && (
             <circle r="4" fill="#818cf8" filter="url(#glow)">
-              <animateMotion dur="2.5s" repeatCount="indefinite" path="M 480 170 C 530 170, 520 80, 550 80" />
+              <animateMotion dur="2.5s" repeatCount="indefinite" path="M 440 170 C 490 170, 500 80, 520 80" />
             </circle>
           )}
 
           {/* channels-worker */}
           <path
-            d="M 670 80 L 740 80"
+            d="M 640 80 L 720 80"
             stroke={isPathActive('channels-worker') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
             strokeWidth={isPathActive('channels-worker') ? 3 : 1.5}
             fill="none"
           />
           {isPathActive('channels-worker') && (
             <circle r="4" fill="#c084fc" filter="url(#glow)">
-              <animateMotion dur="2s" repeatCount="indefinite" path="M 670 80 L 740 80" />
+              <animateMotion dur="2s" repeatCount="indefinite" path="M 640 80 L 720 80" />
             </circle>
           )}
 
           {/* worker-db */}
           <path
-            d="M 800 120 C 800 180, 810 240, 760 240"
+            d="M 780 120 C 780 180, 790 240, 760 240"
             stroke={isPathActive('worker-db') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
             strokeWidth={isPathActive('worker-db') ? 3 : 1.5}
             fill="none"
           />
           {isPathActive('worker-db') && (
             <circle r="4" fill="#818cf8" filter="url(#glow)">
-              <animateMotion dur="2.5s" repeatCount="indefinite" path="M 800 120 C 800 180, 810 240, 760 240" />
+              <animateMotion dur="2.5s" repeatCount="indefinite" path="M 780 120 C 780 180, 790 240, 760 240" />
             </circle>
           )}
 
           {/* backend-db */}
           <path
-            d="M 480 170 C 540 170, 580 240, 640 240"
+            d="M 440 170 C 500 170, 540 240, 640 240"
             stroke={isPathActive('backend-db') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
             strokeWidth={isPathActive('backend-db') ? 3 : 1.5}
             fill="none"
           />
           {isPathActive('backend-db') && (
             <circle r="4" fill="#6366f1" filter="url(#glow)">
-              <animateMotion dur="2.5s" repeatCount="indefinite" path="M 480 170 C 540 170, 580 240, 640 240" />
+              <animateMotion dur="2.5s" repeatCount="indefinite" path="M 440 170 C 500 170, 540 240, 640 240" />
             </circle>
           )}
 
           {/* backend-cache */}
           <path
-            d="M 420 210 L 420 240"
+            d="M 380 210 L 380 245"
             stroke={isPathActive('backend-cache') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
             strokeWidth={isPathActive('backend-cache') ? 3 : 1.5}
             fill="none"
           />
           {isPathActive('backend-cache') && (
             <circle r="4" fill="#fbbf24" filter="url(#glow)">
-              <animateMotion dur="1.8s" repeatCount="indefinite" path="M 420 210 L 420 240" />
+              <animateMotion dur="1.8s" repeatCount="indefinite" path="M 380 210 L 380 245" />
             </circle>
           )}
 
           {/* backend-gemini */}
           <path
-            d="M 420 130 L 420 90"
+            d="M 380 130 L 380 85"
             stroke={isPathActive('backend-gemini') ? 'url(#activeGrad)' : 'rgba(255,255,255,0.06)'}
             strokeWidth={isPathActive('backend-gemini') ? 3 : 1.5}
             fill="none"
           />
           {isPathActive('backend-gemini') && (
             <circle r="4" fill="#a78bfa" filter="url(#glow)">
-              <animateMotion dur="1.8s" repeatCount="indefinite" path="M 420 130 L 420 90" />
+              <animateMotion dur="1.8s" repeatCount="indefinite" path="M 380 130 L 380 85" />
             </circle>
           )}
 
@@ -336,7 +316,7 @@ export default function CoffeeSmartDiagram({ lang = 'en' }) {
         </svg>
       </div>
 
-      {/* Details Description Panel (Placed below the SVG in a balanced Grid structure, fixing cutoff text) */}
+      {/* Details Description Panel */}
       <div className="border-t border-white/5 pt-6 grid grid-cols-1 md:grid-cols-12 gap-8">
         
         {/* Left Column: Title, Tech Tags, Description */}
