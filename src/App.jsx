@@ -808,6 +808,7 @@ export default function App() {
                 <div className="pt-6 flex flex-wrap items-center justify-between gap-4">
                   <div className="flex flex-wrap gap-1.5">
                     <span className="px-2 py-0.5 rounded bg-white/5 text-[9px] text-white">CQRS</span>
+                     <span className="px-2 py-0.5 rounded bg-white/5 text-[9px] text-white">React</span>
                     <span className="px-2 py-0.5 rounded bg-white/5 text-[9px] text-white">MongoDB</span>
                     <span className="px-2 py-0.5 rounded bg-white/5 text-[9px] text-white">.NET Core</span>
                   </div>
